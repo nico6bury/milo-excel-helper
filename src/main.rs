@@ -16,6 +16,7 @@ fn main() {
 					let data = data::read_csv_file(&input_file).unwrap();
 					for dat in data {
 						println!("\nFileID {}", dat.file_id);
+						println!("Ordering {:?}", dat.sample_ordering);
 						for line in dat.input_lines {
 							println!("{:?}", line);
 						}
