@@ -1,5 +1,5 @@
 use gui::GUI;
-use rust_excel_helper::data::{self};
+use rust_excel_helper::{data::{self}, excel};
 
 mod gui;
 
@@ -13,14 +13,37 @@ fn main() {
 				gui::InterfaceMessage::CSVInputFile(input_file) => {
 					gui.start_wait();
 					
+					// get data from csv file
 					let data = data::read_csv_file(&input_file).unwrap();
-					for dat in data {
+
+					// print out all data for debugging purposes
+					for dat in data.iter() {
 						println!("\nFileID {}", dat.file_id);
 						println!("Ordering {:?}", dat.sample_ordering);
-						for line in dat.input_lines {
+						for line in dat.input_lines.iter() {
 							println!("{:?}", line);
-						}
-					}
+						}//end looping over lines
+					}//end looping over image file groups
+					println!("\n\n\n");
+
+					// figure out the output path we want
+					let mut output_path = input_file.clone();
+					output_path.set_file_name(format!("{}-OUT", input_file.file_name().unwrap().to_string_lossy()));
+					output_path.set_extension("xlsx");
+
+					// do a bunch of processing on data to get data chunks
+					println!("Ready to start extracting data chunks from the data we read!");
+					let labelled_chunks = excel::extract_labelled_chunks(&data);
+
+					// write all the data chunks to various excel sheets
+					let mut wb = excel::get_workbook();
+
+					println!("Writing data chunks to sheets!");
+					excel::write_chunks_to_sheet(&mut wb, labelled_chunks.iter(), "labelled").unwrap();
+
+					println!("Closing the workbook, writing to {:?}", output_path);
+					excel::close_workbook(&mut wb, &output_path).unwrap();
+					println!("Finished writing to the workbook successfully!\n");
 
 					gui.end_wait();
 				},
