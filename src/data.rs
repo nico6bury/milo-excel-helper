@@ -18,8 +18,12 @@ pub enum SampleOrder {
 impl SampleOrder {
 	pub fn from_file_id(file_id: &str) -> SampleOrder {
 		let file_components: Vec<&str> = file_id.split('-').collect();
-		if file_components.contains(&"up") || file_components.contains(&"uc") {SampleOrder::AB51}
-		else if file_components.contains(&"dn") || file_components.contains(&"dc") {SampleOrder::BA15}
+
+		let found_ab51 = file_components.contains(&"up") || file_components.contains(&"uc") || file_components.contains(&"51ab");
+		let found_ba15 = file_components.contains(&"dn") || file_components.contains(&"dc") || file_components.contains(&"15ba");
+
+		if found_ab51 && !found_ba15 {SampleOrder::AB51}
+		else if found_ba15 && !found_ab51 {SampleOrder::BA15}
 		else {SampleOrder::Unknown}
 	}//end from_file_id
 }//end impl for SampleOrder
