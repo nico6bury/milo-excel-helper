@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use fltk::{app::{self, App, Receiver, Sender}, button::Button, dialog, enums::{Align, Color, FrameType}, frame::Frame, prelude::{ButtonExt, GroupExt, WidgetExt, WindowExt}, text::TextBuffer, window::{self, Window}};
+use fltk::{app::{self, App, Receiver, Sender}, button::Button, dialog, enums::{Color, FrameType}, prelude::{ButtonExt, GroupExt, WidgetExt, WindowExt}, window::{self, Window}};
 
 #[allow(dead_code)]
 /// This enum is specifically intended for message passing
@@ -39,6 +39,7 @@ impl InterfaceMessage {
     }//end file_message_from_header(header,content)
 }//end InterfaceMessage
 
+#[allow(dead_code)]
 pub struct GUI {
 	app: App,
 	ux_main_window: Window,
@@ -46,6 +47,7 @@ pub struct GUI {
 	msg_receiver: Receiver<InterfaceMessage>
 }//end struct GUI
 
+#[allow(dead_code)]
 impl GUI {
 	/// Returns a clone of the receiver so you can
     /// react to messages sent by gui.
