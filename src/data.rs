@@ -26,6 +26,14 @@ impl SampleOrder {
 		else if found_ba15 && !found_ab51 {SampleOrder::BA15}
 		else {SampleOrder::Unknown}
 	}//end from_file_id
+
+	pub fn get_labels(&self) -> Vec<&str> {
+		match self {
+			SampleOrder::AB51 => vec!["5a","5b","4a","4b","3a","3b","2a","2b","1a","1b"],
+			SampleOrder::BA15 => vec!["1b","1a","2b","2a","3b","3a","4b","4a","5b","5a"],
+			SampleOrder::Unknown => vec!["??","??","??","??","??","??","??","??","??","??"],
+		}//end matching self
+	}//end get_labels
 }//end impl for SampleOrder
 
 #[derive(Clone,PartialEq,PartialOrd,Debug)]
