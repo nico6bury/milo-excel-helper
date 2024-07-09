@@ -35,6 +35,14 @@ impl InputFile {
 	pub fn new(file_id: &str, input_lines: Vec<InputLine>) -> InputFile {
 		InputFile {file_id: file_id.to_string(), input_lines, sample_ordering: SampleOrder::AB51}
 	}//end new()
+
+	pub fn get_ab51_ordered_lines(input_file: &InputFile) -> Vec<&InputLine> {
+		match input_file.sample_ordering {
+			SampleOrder::AB51 => input_file.input_lines.iter().collect(),
+			SampleOrder::BA15 => input_file.input_lines.iter().rev().collect(),
+			SampleOrder::Unknown => Vec::new(),
+		}//end matching current ordering of input lines
+	}//end get_ab51_order()
 }//end impl for InputFile
 
 pub fn read_csv_file(file: &PathBuf) -> Option<Vec<InputFile>> {
