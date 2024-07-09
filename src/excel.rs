@@ -2,6 +2,8 @@ use std::{path::PathBuf, slice::Iter};
 
 use rust_xlsxwriter::{Format, Workbook, XlsxError};
 
+use crate::data::InputFile;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataVal {
 	String(String),
@@ -21,6 +23,15 @@ pub struct DataChunk{
 	pub rows: Vec<Vec<DataVal>>
 }
 
+impl DataChunk {
+	pub fn new() -> DataChunk {
+		DataChunk {
+			headers: Vec::new(),
+			rows: Vec::new(),
+		}
+	}
+}
+
 pub fn get_workbook() -> Workbook {
 	Workbook::new()
 }
@@ -29,6 +40,35 @@ pub fn close_workbook(workbook: &mut Workbook, output_path: &PathBuf) -> Result<
 	workbook.save(output_path)?;
 	Ok(())
 }
+
+pub fn extract_labelled_chunks(data: &Vec<InputFile>) -> Vec<DataChunk> {
+	let mut chunks = Vec::new();
+	for file in data {
+		let mut chunk = DataChunk::new();
+		chunk.headers.push(("Sample".to_string(),0));
+		chunk.headers.push(("FileID".to_string(),0));
+		chunk.headers.push(("GridIdx".to_string(),0));
+		chunk.headers.push(("Area1".to_string(),0));
+		chunk.headers.push(("Area2".to_string(),0));
+		chunk.headers.push(("%Area2".to_string(),1));
+
+		let sample_labels = file.sample_ordering.get_labels();
+		for (i,line) in file.input_lines.iter().enumerate() {
+			let label = sample_labels.get(i).unwrap_or(&"???");
+			chunk.rows.push(vec![
+				DataVal::String(label.to_string()),
+				DataVal::String(file.file_id.clone()),
+				DataVal::Integer(line.grid_idx),
+				DataVal::Integer(line.area1),
+				DataVal::Integer(line.area2),
+				DataVal::Float(line.perc_area2)
+			]);
+		}//end going over each line
+
+		chunks.push(chunk);
+	}//end looping over files in data
+	return chunks;
+}//end extract_labelled_chunks()
 
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
@@ -74,7 +114,7 @@ pub fn write_chunks_to_sheet(
 				let format = formats.get(col_offset).unwrap_or(&default_format);
 				let col_offset = col_offset as u16;
 				match value {
-					DataVal::Integer(i) => sheet.write_number_with_format(chunk_row,col_offset,*i as f64, format)?,
+					DataVal::Integer(i) => sheet.write_number(chunk_row,col_offset,*i as f64)?,
 					DataVal::Float(f) => sheet.write_number_with_format(chunk_row,col_offset, *f, format)?,
 					DataVal::String(s) => sheet.write(chunk_row, col_offset, s)?,
 				};//end matching type of data
