@@ -176,8 +176,11 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 				let this_row = match chunk.rows.get_mut(row_idx) {
 					Some(chunk_row) => chunk_row,
 					None => {
-						while !(row_idx < chunk.rows.len()) { for _ in 0..=(col_idx+1)
-							{ chunk.rows.push(vec![DataVal::String("??".to_string())]); }
+						while !(row_idx < chunk.rows.len()) {
+							let mut new_placeholder_row = Vec::new();
+							for _ in 0..(col_idx+1)
+							{ new_placeholder_row.push(DataVal::String("??".to_string())) }
+							chunk.rows.push(new_placeholder_row);
 						}//end populating empty space so we're in the right position
 						chunk.rows.last_mut().unwrap()
 					}//end case that we need to create a row to reference
