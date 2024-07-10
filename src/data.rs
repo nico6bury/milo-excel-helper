@@ -45,7 +45,7 @@ pub struct InputFile {
 
 impl InputFile {
 	pub fn new(file_id: &str, input_lines: Vec<InputLine>) -> InputFile {
-		InputFile {file_id: file_id.to_string(), input_lines, sample_ordering: SampleOrder::AB51}
+		InputFile {file_id: file_id.to_string(), input_lines, sample_ordering: SampleOrder::from_file_id(file_id)}
 	}//end new()
 
 	pub fn get_ab51_ordered_lines(input_file: &InputFile) -> Vec<&InputLine> {
