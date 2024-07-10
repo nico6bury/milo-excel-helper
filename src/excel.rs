@@ -1,6 +1,6 @@
 use std::{path::PathBuf, slice::Iter};
 
-use rust_xlsxwriter::{Format, Workbook, XlsxError};
+use rust_xlsxwriter::{Format, FormatAlign, Workbook, XlsxError};
 
 use crate::data::{InputFile, SampleOrder};
 
@@ -145,8 +145,8 @@ pub fn write_chunks_to_sheet(
 	sheet.set_name(sheet_name)?;
 	
 	// create a few formats to use later
-	let bold = Format::new().set_bold();
-	let default_format = Format::new().set_num_format("0.00");
+	let bold = Format::new().set_bold().set_align(FormatAlign::Center);
+	let default_format = Format::new().set_align(FormatAlign::Center);
 
 	// actually start writing all the data to everything
 	let mut chunk_row = 0;
@@ -167,7 +167,9 @@ pub fn write_chunks_to_sheet(
 		for (_,decimals) in chunk.headers.iter() {
 			let mut num_format = String::from("0.");
 			for _ in 0..*decimals {num_format.push_str("0");}
-			let this_format = Format::new().set_num_format(num_format);
+			let this_format = Format::new()
+				.set_num_format(num_format)
+				.set_align(FormatAlign::Center);
 			formats.push(this_format);
 		}//end creating format for each header
 
@@ -178,9 +180,9 @@ pub fn write_chunks_to_sheet(
 				let format = formats.get(col_offset).unwrap_or(&default_format);
 				let col_offset = col_offset as u16;
 				match value {
-					DataVal::Integer(i) => sheet.write_number(chunk_row,col_offset,*i as f64)?,
+					DataVal::Integer(i) => sheet.write_number_with_format(chunk_row,col_offset,*i as f64,&default_format)?,
 					DataVal::Float(f) => sheet.write_number_with_format(chunk_row,col_offset, *f, format)?,
-					DataVal::String(s) => sheet.write(chunk_row, col_offset, s)?,
+					DataVal::String(s) => sheet.write_with_format(chunk_row, col_offset, s,&default_format)?,
 				};//end matching type of data
 			}//end looping over cells within row
 			chunk_row += 1;
