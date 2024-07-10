@@ -91,7 +91,7 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		}//end adding Area headers
 
 		// print out data in columns instead of rows
-		let sample_labels = SampleOrder::AB51.get_labels();
+		let sample_labels = SampleOrder::AB15.get_labels();
 		for sample in sample_labels 
 		{ chunk.rows.push(vec![DataVal::String(sample.to_string())]); }
 		
@@ -100,7 +100,7 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		let empty = DataVal::String("".to_string());
 		
 		for file in files {
-			for (row_idx, row) in InputFile::get_ab51_ordered_lines(file).iter().enumerate() {
+			for (row_idx, row) in InputFile::get_ab15_order(file.sample_ordering, &file.input_lines).iter().enumerate() {
 				let a1 = DataVal::Integer(row.area1);
 				let a2 = DataVal::Integer(row.area2);
 				let a2p = DataVal::Float(row.perc_area2);
@@ -121,19 +121,24 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		return chunk;
 	}//end extract_chunk_1_helper()
 
-	// chunk for ab51 ordering
-	let ab51_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::AB51).collect();
-	let ab51_chunk = extract_sorted_chunk_1_helper(&ab51_files);
+	// get vector of unique SampleOrder values
+	let mut all_orderings = data.iter()
+		.map(|f| f.sample_ordering)
+		.collect::<Vec<SampleOrder>>();
+	all_orderings.sort_unstable();
+	all_orderings.dedup();
 
-	// chunk for ba15 ordering
-	let ba15_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::BA15).collect();
-	let ba15_chunk = extract_sorted_chunk_1_helper(&ba15_files);
+	let mut chunks = Vec::new();
 
-	// // chunk for unknown ordering
-	// let unknown_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::Unknown).collect();
-	// let unknown_chunk = extract_sorted_chunk_1_helper(&unknown_files);
+	for ordering in all_orderings {
+		let files = data.iter()
+			.filter(|f| f.sample_ordering == ordering)
+			.collect();
+		let chunk = extract_sorted_chunk_1_helper(&files);
+		chunks.push(chunk);
+	}//end getting a chunk of files for each ordering we found
 
-	return vec![ab51_chunk,ba15_chunk/*,unknown_chunk*/];
+	return chunks;
 }//end extract_sorted_chunks_1()
 
 pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
@@ -165,14 +170,14 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		{ chunk.headers.push((i_to_label(i),1)); }
 
 		// add the data
-		let sample_labels = SampleOrder::AB51.get_labels();
+		let sample_labels = SampleOrder::AB15.get_labels();
 		sample_labels
 			.iter()
 			.map(|elem| DataVal::String(elem.to_string()))
 			.for_each(|elem| chunk.rows.push(vec![elem]));
 		let mut last_line = vec![DataVal::String("FileID".to_string())];
 		for (col_idx, file) in data.iter().enumerate() {
-			for (row_idx, row) in InputFile::get_ab51_ordered_lines(&file).iter().enumerate() {
+			for (row_idx, row) in InputFile::get_ab15_order(file.sample_ordering, &file.input_lines).iter().enumerate() {
 				let this_row = match chunk.rows.get_mut(row_idx) {
 					Some(chunk_row) => chunk_row,
 					None => {
