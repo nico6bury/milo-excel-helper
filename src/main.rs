@@ -35,6 +35,7 @@ fn main() {
 					println!("Ready to start extracting data chunks from the data we read!");
 					let labelled_chunks = excel::extract_labelled_chunks(&data);
 					let sorted_1_chunks = excel::extract_sorted_chunks_1(&data);
+					let sorted_2_chunks = excel::extract_sorted_chunks_2(&data);
 
 					// write all the data chunks to various excel sheets
 					let mut wb = excel::get_workbook();
@@ -51,6 +52,12 @@ fn main() {
 						sorted_1_chunks.iter(),
 						"sorted-1"
 					).unwrap_or_else(|_|println!("Failed to write sorted_1_chunks."));
+
+					excel::write_chunks_to_sheet(
+						&mut wb,
+						sorted_2_chunks.iter(),
+						"sorted-2"
+					).unwrap_or_else(|_| println!("Failed to write sorted_2_chunks."));
 
 					println!("Closing the workbook, writing to {:?}", output_path);
 					excel::close_workbook(&mut wb, &output_path).unwrap();
