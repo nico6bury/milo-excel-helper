@@ -84,6 +84,7 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		chunk.headers.push(("Sample".to_string(),0));
 		// // add Area1,Area2,%Area2 for each file, then av, std, cv
 		for _ in 0..(files.len()/* + 3*/) {
+			chunk.headers.push(("".to_string(),0));
 			chunk.headers.push(("Area1".to_string(),0));
 			chunk.headers.push(("Area2".to_string(),0));
 			chunk.headers.push(("%Area2".to_string(),1));
@@ -104,10 +105,11 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 				let a2 = DataVal::Integer(row.area2);
 				let a2p = DataVal::Float(row.perc_area2);
 				match chunk.rows.get_mut(row_idx) {
-					Some(row) => row.append(&mut vec![a1,a2,a2p]),
-					None => chunk.rows.push(vec![DataVal::String("?".to_string()),a1,a2,a2p]),
+					Some(row) => row.append(&mut vec![empty.clone(),a1,a2,a2p]),
+					None => chunk.rows.push(vec![DataVal::String("?".to_string()),empty.clone(),a1,a2,a2p]),
 				}//end adding data to chunk, regardless of whether we have sample
 			}//end looping over the lines of data in this file
+			last_line.push(empty.clone());
 			last_line.push(empty.clone());
 			last_line.push(DataVal::String(file.file_id.clone()));
 			last_line.push(empty.clone());
