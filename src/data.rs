@@ -88,6 +88,26 @@ impl InputFile {
 			SampleOrder::Unknown => Vec::new(),
 		}//end matching current ordering of input lines
 	}//end get_ab51_order()
+
+	pub fn get_ab15_order(cur_order: SampleOrder, lines: &Vec<InputLine>) -> Vec<&InputLine> {
+		match cur_order {
+			SampleOrder::AB15 => return lines.iter().collect(),
+			SampleOrder::BA51 => return lines.iter().rev().collect(),
+			SampleOrder::AB51 | SampleOrder::BA15 => {
+				let mut ab_swp: Vec<&InputLine> = Vec::new();
+				let mut i = 0; let mut j = 1;
+				while i < lines.len() && j < lines.len() {
+					ab_swp.push(&lines[j]);
+					ab_swp.push(&lines[i]);
+				i+= 2; j += 2;}
+				// do iterator stuff to return stuff in the right format
+				let ab_swp_iter = ab_swp.iter().map(|n| *n);
+				if cur_order == SampleOrder::BA15 {return ab_swp_iter.rev().collect();}
+				else {return ab_swp_iter.collect()}
+			},
+			SampleOrder::Unknown => return lines.iter().collect(),
+		}
+	}
 }//end impl for InputFile
 
 pub fn read_csv_file(file: &PathBuf) -> Option<Vec<InputFile>> {
