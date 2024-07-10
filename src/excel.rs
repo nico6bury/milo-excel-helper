@@ -2,7 +2,7 @@ use std::{path::PathBuf, slice::Iter};
 
 use rust_xlsxwriter::{Format, Workbook, XlsxError};
 
-use crate::data::InputFile;
+use crate::data::{InputFile, SampleOrder};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataVal {
@@ -69,6 +69,70 @@ pub fn extract_labelled_chunks(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	}//end looping over files in data
 	return chunks;
 }//end extract_labelled_chunks()
+
+pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
+	// each chunk is an ordering, so ab51 or ba15
+	// thus, before creating chunks, must sort out input by ordering
+	// sorting input by ordering can be done in one line with .iter.filter.collect, so
+	// we should create an inner function which just returns a chunk for a list of
+	// input files, and then we can call that super easily on any sorting we need
+
+	fn extract_sorted_chunk_1_helper(files: &Vec<&InputFile>) -> DataChunk {
+		let mut chunk = DataChunk::new();
+
+		// add the headers to chunk
+		chunk.headers.push(("Sample".to_string(),0));
+		// // add Area1,Area2,%Area2 for each file, then av, std, cv
+		for _ in 0..(files.len()/* + 3*/) {
+			chunk.headers.push(("Area1".to_string(),0));
+			chunk.headers.push(("Area2".to_string(),0));
+			chunk.headers.push(("%Area2".to_string(),1));
+		}//end adding Area headers
+
+		// print out data in columns instead of rows
+		let sample_labels = SampleOrder::AB51.get_labels();
+		for sample in sample_labels 
+		{ chunk.rows.push(vec![DataVal::String(sample.to_string())]); }
+		
+		// stuff for area, std, cv
+		let mut last_line = vec![DataVal::String("FileID".to_string())];
+		let empty = DataVal::String("".to_string());
+		
+		for file in files {
+			for (row_idx, row) in InputFile::get_ab51_ordered_lines(file).iter().enumerate() {
+				let a1 = DataVal::Integer(row.area1);
+				let a2 = DataVal::Integer(row.area2);
+				let a2p = DataVal::Float(row.perc_area2);
+				match chunk.rows.get_mut(row_idx) {
+					Some(row) => row.append(&mut vec![a1,a2,a2p]),
+					None => chunk.rows.push(vec![DataVal::String("?".to_string()),a1,a2,a2p]),
+				}//end adding data to chunk, regardless of whether we have sample
+			}//end looping over the lines of data in this file
+			last_line.push(empty.clone());
+			last_line.push(DataVal::String(file.file_id.clone()));
+			last_line.push(empty.clone());
+		}//end adding data to chunk for each file
+		chunk.rows.push(last_line);
+
+		// TODO: Add average, stdev, csv
+
+		return chunk;
+	}//end extract_chunk_1_helper()
+
+	// chunk for ab51 ordering
+	let ab51_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::AB51).collect();
+	let ab51_chunk = extract_sorted_chunk_1_helper(&ab51_files);
+
+	// chunk for ba15 ordering
+	let ba15_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::BA15).collect();
+	let ba15_chunk = extract_sorted_chunk_1_helper(&ba15_files);
+
+	// // chunk for unknown ordering
+	// let unknown_files = data.iter().filter(|f| f.sample_ordering == SampleOrder::Unknown).collect();
+	// let unknown_chunk = extract_sorted_chunk_1_helper(&unknown_files);
+
+	return vec![ab51_chunk,ba15_chunk/*,unknown_chunk*/];
+}//end extract_sorted_chunks_1()
 
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
