@@ -8,7 +8,7 @@ pub struct InputLine {
 	pub perc_area2: f32,
 }
 
-#[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Eq, Ord)]
 pub enum SampleOrder {
 	AB51,
 	BA15,
