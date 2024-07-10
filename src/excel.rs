@@ -2,7 +2,7 @@ use std::{path::PathBuf, slice::Iter};
 
 use rust_xlsxwriter::{Format, FormatAlign, Workbook, XlsxError};
 
-use crate::data::{InputFile, SampleOrder};
+use crate::data::{InputFile, InputLine, SampleOrder};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DataVal {
@@ -135,6 +135,64 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 
 	return vec![ab51_chunk,ba15_chunk/*,unknown_chunk*/];
 }//end extract_sorted_chunks_1()
+
+pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
+	// simple little functions to avoid repeating things
+	fn i_to_val(input: &InputLine, idx: i32) -> DataVal {
+		match idx {
+			0 => DataVal::Integer(input.area1),
+			1 => DataVal::Integer(input.area2),
+			2 => DataVal::Float(input.perc_area2),
+			_ => DataVal::String("????".to_string())
+		}//end matching index to property we want
+	}//end i_to_val
+	fn i_to_label(idx: i32) -> String {
+		match idx {
+			0 => "Area1".to_string(),
+			1 => "Area2".to_string(),
+			2 => "%Area2".to_string(),
+			_ => "Unknown".to_string()
+		}//end matching index to column label
+	}//end i_to_label
+	
+	let mut chunks = Vec::new();
+
+	for i in 0..=2 {
+		let mut chunk = DataChunk::new();
+		// add the headers
+		chunk.headers.push(("Sample".to_string(),0));
+		for _ in data.iter()
+		{ chunk.headers.push((i_to_label(i),1)); }
+
+		// add the data
+		let sample_labels = SampleOrder::AB51.get_labels();
+		sample_labels
+			.iter()
+			.map(|elem| DataVal::String(elem.to_string()))
+			.for_each(|elem| chunk.rows.push(vec![elem]));
+		let mut last_line = vec![DataVal::String("FileID".to_string())];
+		for (col_idx, file) in data.iter().enumerate() {
+			for (row_idx, row) in InputFile::get_ab51_ordered_lines(&file).iter().enumerate() {
+				let this_row = match chunk.rows.get_mut(row_idx) {
+					Some(chunk_row) => chunk_row,
+					None => {
+						while !(row_idx < chunk.rows.len()) { for _ in 0..=(col_idx+1)
+							{ chunk.rows.push(vec![DataVal::String("??".to_string())]); }
+						}//end populating empty space so we're in the right position
+						chunk.rows.last_mut().unwrap()
+					}//end case that we need to create a row to reference
+				};// end getting reference for this row
+				this_row.push(i_to_val(row, i));
+			}//end looping over rows in the file
+			last_line.push(DataVal::String(file.file_id.clone()));
+		}//end looping over files
+		chunk.rows.push(last_line);
+
+		chunks.push(chunk);
+	}//end looping over val indices
+
+	return chunks;
+}//end extract_sorted_chunks_2()
 
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
