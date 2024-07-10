@@ -140,17 +140,17 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	// simple little functions to avoid repeating things
 	fn i_to_val(input: &InputLine, idx: i32) -> DataVal {
 		match idx {
-			0 => DataVal::Integer(input.area1),
-			1 => DataVal::Integer(input.area2),
-			2 => DataVal::Float(input.perc_area2),
+			1 => DataVal::Integer(input.area1),
+			2 => DataVal::Integer(input.area2),
+			0 => DataVal::Float(input.perc_area2),
 			_ => DataVal::String("????".to_string())
 		}//end matching index to property we want
 	}//end i_to_val
 	fn i_to_label(idx: i32) -> String {
 		match idx {
-			0 => "Area1".to_string(),
-			1 => "Area2".to_string(),
-			2 => "%Area2".to_string(),
+			1 => "Area1".to_string(),
+			2 => "Area2".to_string(),
+			0 => "%Area2".to_string(),
 			_ => "Unknown".to_string()
 		}//end matching index to column label
 	}//end i_to_label
