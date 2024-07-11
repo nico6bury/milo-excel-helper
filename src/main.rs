@@ -1,5 +1,5 @@
 use gui::GUI;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use rust_excel_helper::{data::{self}, excel};
 
 mod gui;
@@ -16,9 +16,12 @@ fn main() {
 					let start = Instant::now();
 					
 					// get data from csv file
+					let csv_start = Instant::now();
 					let data = data::read_csv_file(&input_file).unwrap();
+					let csv_duration = csv_start.elapsed();
 
 					// print out all data for debugging purposes
+					let debug_start = Instant::now();
 					for dat in data.iter() {
 						println!("\nFileID {}", dat.file_id);
 						println!("Ordering {:?}", dat.sample_ordering);
@@ -27,20 +30,19 @@ fn main() {
 						}//end looping over lines
 					}//end looping over image file groups
 					println!("\n\n\n");
-
-					// figure out the output path we want
-					let mut output_path = input_file.clone();
-					output_path.set_file_name(format!("{}-OUT", input_file.file_name().unwrap().to_string_lossy()));
-					output_path.set_extension("xlsx");
+					let debug_duration = debug_start.elapsed();
 
 					// do a bunch of processing on data to get data chunks
 					println!("Ready to start extracting data chunks from the data we read!");
+					let process_start = Instant::now();
 					let labelled_chunks = excel::extract_labelled_chunks(&data);
 					let sorted_1_chunks = excel::extract_sorted_chunks_1(&data);
 					let sorted_2_chunks = excel::extract_sorted_chunks_2(&data);
+					let process_duration = process_start.elapsed();
 
 					// write all the data chunks to various excel sheets
 					let mut wb = excel::get_workbook();
+					let workbook_start = Instant::now();
 
 					println!("Writing data chunks to sheets!");
 					excel::write_chunks_to_sheet(
@@ -63,13 +65,26 @@ fn main() {
 
 					if let Ok(worksheet) = wb.worksheet_from_index(2) {worksheet.set_active(true);}
 
+					// figure out the output path we want for the xlsx file
+					let mut output_path = input_file.clone();
+					output_path.set_file_name(format!("{}-OUT", input_file.file_name().unwrap().to_string_lossy()));
+					output_path.set_extension("xlsx");
+
+					// actually write the changes to the workbook
 					println!("Closing the workbook, writing to {:?}", output_path);
 					excel::close_workbook(&mut wb, &output_path).unwrap();
 					println!("Finished writing to the workbook successfully!\n");
-
+					let workbook_duration = workbook_start.elapsed();
+					
 					gui.end_wait();
-					let duration = start.elapsed();
-					println!("Processing completed in {} milliseconds.", duration.as_millis());
+
+					// print information on how long program took to run
+					let total_duration = start.elapsed();
+					println!("{} milliseconds to read csv file.", format_milliseconds(csv_duration));
+					println!("{} milliseconds to print debug information.", format_milliseconds(debug_duration));
+					println!("{} milliseconds to process all data.", format_milliseconds(process_duration));
+					println!("{} milliseconds to write all data to the workbook.", format_milliseconds(workbook_duration));
+					println!("All processes completed after {} milliseconds.", format_milliseconds(total_duration));
 				},
 				gui::InterfaceMessage::AppClosing => GUI::quit(),
 				_ => println!("Message {:?} not recognized or supported.", msg),
@@ -77,3 +92,13 @@ fn main() {
 		}//end if we have an Interface Message
 	}//end main app loop
 }//end main method
+
+/// Given a duration, gives a string of a float representation of the number
+/// of milliseconds. If the parse fails, it will return the whole
+/// number of milliseconds as a string.
+fn format_milliseconds(duration: Duration) -> String {
+	match format!("{}",duration.as_micros()).parse::<f64>() {
+		Err(_) => format!("{}",duration.as_millis()),
+		Ok(micros) => format!("{0:.2}", micros / 1000.),
+	}//end matching whether we can parse float-micros
+}//end format_milliseconds(duration)
