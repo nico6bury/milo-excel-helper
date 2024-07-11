@@ -11,6 +11,10 @@ pub enum DataVal {
 	Float(f32),
 }
 
+impl DataVal {
+	pub fn str(str: &str) -> DataVal {DataVal::String(str.to_string())}
+}
+
 /// for each in header:
 /// - name of header
 /// - decimal places to display for header
@@ -57,8 +61,8 @@ pub fn extract_labelled_chunks(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		for (i,line) in file.input_lines.iter().enumerate() {
 			let label = sample_labels.get(i).unwrap_or(&"???");
 			chunk.rows.push(vec![
-				DataVal::String(label.to_string()),
-				DataVal::String(file.file_id.clone()),
+				DataVal::str(label),
+				DataVal::str(&file.file_id),
 				DataVal::Integer(line.grid_idx),
 				DataVal::Integer(line.area1),
 				DataVal::Integer(line.area2),
@@ -94,11 +98,11 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		// print out data in columns instead of rows
 		let sample_labels = SampleOrder::AB15.get_labels();
 		for sample in sample_labels 
-		{ chunk.rows.push(vec![DataVal::String(sample.to_string())]); }
+		{ chunk.rows.push(vec![DataVal::str(sample)]); }
 		
 		// stuff for area, std, cv
-		let mut last_line = vec![DataVal::String("FileID".to_string())];
-		let empty = DataVal::String("".to_string());
+		let mut last_line = vec![DataVal::str("FileID")];
+		let empty = DataVal::str("");
 		
 		for file in files {
 			for (row_idx, row) in InputFile::get_ab15_order(file.sample_ordering, &file.input_lines).iter().enumerate() {
@@ -107,12 +111,12 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 				let a2p = DataVal::Float(row.perc_area2);
 				match chunk.rows.get_mut(row_idx) {
 					Some(row) => row.append(&mut vec![empty.clone(),a1,a2,a2p]),
-					None => chunk.rows.push(vec![DataVal::String("?".to_string()),empty.clone(),a1,a2,a2p]),
+					None => chunk.rows.push(vec![DataVal::str("?"),empty.clone(),a1,a2,a2p]),
 				}//end adding data to chunk, regardless of whether we have sample
 			}//end looping over the lines of data in this file
 			last_line.push(empty.clone());
 			last_line.push(empty.clone());
-			last_line.push(DataVal::String(file.file_id.clone()));
+			last_line.push(DataVal::str(&file.file_id));
 			last_line.push(empty.clone());
 		}//end adding data to chunk for each file
 		chunk.rows.push(last_line);
@@ -149,7 +153,7 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 			1 => DataVal::Integer(input.area1),
 			2 => DataVal::Integer(input.area2),
 			0 => DataVal::Float(input.perc_area2),
-			_ => DataVal::String("????".to_string())
+			_ => DataVal::str("????")
 		}//end matching index to property we want
 	}//end i_to_val
 	fn i_to_label(idx: i32) -> String {
@@ -174,9 +178,9 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		let sample_labels = SampleOrder::AB15.get_labels();
 		sample_labels
 			.iter()
-			.map(|elem| DataVal::String(elem.to_string()))
+			.map(|elem| DataVal::str(elem))
 			.for_each(|elem| chunk.rows.push(vec![elem]));
-		let mut last_line = vec![DataVal::String("FileID".to_string())];
+		let mut last_line = vec![DataVal::str("FileID")];
 		for (col_idx, file) in data.iter().enumerate() {
 			for (row_idx, row) in InputFile::get_ab15_order(file.sample_ordering, &file.input_lines).iter().enumerate() {
 				let this_row = match chunk.rows.get_mut(row_idx) {
@@ -185,7 +189,7 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 						while !(row_idx < chunk.rows.len()) {
 							let mut new_placeholder_row = Vec::new();
 							for _ in 0..(col_idx+1)
-							{ new_placeholder_row.push(DataVal::String("??".to_string())) }
+							{ new_placeholder_row.push(DataVal::str("??")) }
 							chunk.rows.push(new_placeholder_row);
 						}//end populating empty space so we're in the right position
 						chunk.rows.last_mut().unwrap()
@@ -193,7 +197,7 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 				};// end getting reference for this row
 				this_row.push(i_to_val(row, i));
 			}//end looping over rows in the file
-			last_line.push(DataVal::String(file.file_id.clone()));
+			last_line.push(DataVal::str(&file.file_id));
 		}//end looping over files
 		chunk.rows.push(last_line);
 
@@ -217,7 +221,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 	// add sample labels
 	let sample_labels = SampleOrder::AB15.get_labels();
 	sample_labels.iter()
-		.map(|lbl| DataVal::String(lbl.to_string()))
+		.map(|lbl| DataVal::str(lbl))
 		.for_each(|lbl| chunk.rows.push(vec![lbl]));
 
 	// add %Area2 for each file
@@ -234,7 +238,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 					while !(line_idx < chunk.rows.len()) {
 						let mut new_placeholder_row = Vec::new();
 						for _ in 0..(col_idx+1)
-						{ new_placeholder_row.push(DataVal::String("??".to_string())); }
+						{ new_placeholder_row.push(DataVal::str("??")); }
 						chunk.rows.push(new_placeholder_row);
 					}//end populating empty space so we're in the right position
 					chunk.rows.last_mut().unwrap()
@@ -252,7 +256,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 				_ => None,})
 			.map(|f| f.clone())
 			.collect::<Vec<f32>>();
-		row.push(DataVal::String("".to_string()));
+		row.push(DataVal::str(""));
 		row.push(DataVal::Float(crate::math::avg(data_slice)));
 		row.push(DataVal::Float(crate::math::std(data_slice)));
 		row.push(DataVal::Float(crate::math::cv(data_slice)));
