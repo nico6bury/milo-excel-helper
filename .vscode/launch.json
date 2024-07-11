@@ -7,16 +7,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'rust_excel_helper'",
+            "name": "Debug unit tests in library 'milo_excel_helper'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=rust-excel-helper"
+                    "--package=milo-excel-helper"
                 ],
                 "filter": {
-                    "name": "rust_excel_helper",
+                    "name": "milo_excel_helper",
                     "kind": "lib"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'rust-excel-helper'",
+            "name": "Debug executable 'milo-excel-helper'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=rust-excel-helper",
-                    "--package=rust-excel-helper"
+                    "--bin=milo-excel-helper",
+                    "--package=milo-excel-helper"
                 ],
                 "filter": {
-                    "name": "rust-excel-helper",
+                    "name": "milo-excel-helper",
                     "kind": "bin"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'rust-excel-helper'",
+            "name": "Debug unit tests in executable 'milo-excel-helper'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=rust-excel-helper",
-                    "--package=rust-excel-helper"
+                    "--bin=milo-excel-helper",
+                    "--package=milo-excel-helper"
                 ],
                 "filter": {
-                    "name": "rust-excel-helper",
+                    "name": "milo-excel-helper",
                     "kind": "bin"
                 }
             },

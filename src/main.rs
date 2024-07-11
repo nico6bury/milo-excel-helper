@@ -1,6 +1,6 @@
 use gui::GUI;
 use std::time::{Duration, Instant};
-use rust_excel_helper::{data::{self}, excel};
+use milo_excel_helper::{data::{self}, excel};
 
 mod gui;
 
