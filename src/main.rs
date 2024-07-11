@@ -61,6 +61,8 @@ fn main() {
 						"sorted-2"
 					).unwrap_or_else(|_| println!("Failed to write sorted_2_chunks."));
 
+					if let Ok(worksheet) = wb.worksheet_from_index(2) {worksheet.set_active(true);}
+
 					println!("Closing the workbook, writing to {:?}", output_path);
 					excel::close_workbook(&mut wb, &output_path).unwrap();
 					println!("Finished writing to the workbook successfully!\n");
