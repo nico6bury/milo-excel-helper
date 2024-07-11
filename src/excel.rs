@@ -14,12 +14,13 @@ pub enum DataVal {
 /// for each in header:
 /// - name of header
 /// - decimal places to display for header
+/// - true if this header contains percent values
 /// for each in sample_row:
 /// - A row of data. for each in row of data:
 /// 	- individual cells of data
 #[derive(Clone, Debug, PartialEq)]
 pub struct DataChunk{ 
-	pub headers: Vec<(String, usize)>,
+	pub headers: Vec<(String, usize, bool)>,
 	pub rows: Vec<Vec<DataVal>>
 }
 
@@ -45,12 +46,12 @@ pub fn extract_labelled_chunks(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	let mut chunks = Vec::new();
 	for file in data {
 		let mut chunk = DataChunk::new();
-		chunk.headers.push(("Sample".to_string(),0));
-		chunk.headers.push(("FileID".to_string(),0));
-		chunk.headers.push(("GridIdx".to_string(),0));
-		chunk.headers.push(("Area1".to_string(),0));
-		chunk.headers.push(("Area2".to_string(),0));
-		chunk.headers.push(("%Area2".to_string(),1));
+		chunk.headers.push(("Sample".to_string(),0, false));
+		chunk.headers.push(("FileID".to_string(),0, false));
+		chunk.headers.push(("GridIdx".to_string(),0, false));
+		chunk.headers.push(("Area1".to_string(),0, false));
+		chunk.headers.push(("Area2".to_string(),0, false));
+		chunk.headers.push(("%Area2".to_string(),1, false));
 
 		let sample_labels = file.sample_ordering.get_labels();
 		for (i,line) in file.input_lines.iter().enumerate() {
@@ -81,13 +82,13 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		let mut chunk = DataChunk::new();
 
 		// add the headers to chunk
-		chunk.headers.push(("Sample".to_string(),0));
+		chunk.headers.push(("Sample".to_string(),0, false));
 		// // add Area1,Area2,%Area2 for each file, then av, std, cv
 		for _ in 0..(files.len()/* + 3*/) {
-			chunk.headers.push(("".to_string(),0));
-			chunk.headers.push(("Area1".to_string(),0));
-			chunk.headers.push(("Area2".to_string(),0));
-			chunk.headers.push(("%Area2".to_string(),1));
+			chunk.headers.push(("".to_string(),0, false));
+			chunk.headers.push(("Area1".to_string(),0, false));
+			chunk.headers.push(("Area2".to_string(),0, false));
+			chunk.headers.push(("%Area2".to_string(),1, false));
 		}//end adding Area headers
 
 		// print out data in columns instead of rows
@@ -165,9 +166,9 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	for i in 0..=2 {
 		let mut chunk = DataChunk::new();
 		// add the headers
-		chunk.headers.push(("Sample".to_string(),0));
+		chunk.headers.push(("Sample".to_string(),0, false));
 		for _ in data.iter()
-		{ chunk.headers.push((i_to_label(i),1)); }
+		{ chunk.headers.push((i_to_label(i),1, false)); }
 
 		// add the data
 		let sample_labels = SampleOrder::AB15.get_labels();
@@ -205,13 +206,13 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 	let mut chunk = DataChunk::new();
 	// add the headers
-	chunk.headers.push(("Sample".to_string(),0));
+	chunk.headers.push(("Sample".to_string(),0, false));
 	for _ in data.iter()
-	{ chunk.headers.push(("%Area2".to_string(),1)); }
-	chunk.headers.push(("".to_string(),0));
-	chunk.headers.push(("Avg".to_string(),1));
-	chunk.headers.push(("Std".to_string(),2));
-	chunk.headers.push(("CV".to_string(),2));
+	{ chunk.headers.push(("%Area2".to_string(),1, false)); }
+	chunk.headers.push(("".to_string(),0, false));
+	chunk.headers.push(("Avg".to_string(),1, false));
+	chunk.headers.push(("Std".to_string(),2, false));
+	chunk.headers.push(("CV".to_string(),2, true));
 	
 	// add sample labels
 	let sample_labels = SampleOrder::AB15.get_labels();
@@ -290,9 +291,10 @@ pub fn write_chunks_to_sheet(
 
 		// create formats for each header row, based on chunk info
 		let mut formats = Vec::new();
-		for (_,decimals) in chunk.headers.iter() {
+		for (_,decimals,is_percent) in chunk.headers.iter() {
 			let mut num_format = String::from("0.");
 			for _ in 0..*decimals {num_format.push_str("0");}
+			if *is_percent {num_format.push_str("%");}
 			let this_format = Format::new()
 				.set_num_format(num_format)
 				.set_align(FormatAlign::Center);
