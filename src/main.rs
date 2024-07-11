@@ -70,7 +70,7 @@ fn main() {
 						"sum"
 					).unwrap_or_else(|_| println!("Failed to write sum chunk."));
 
-					if let Ok(worksheet) = wb.worksheet_from_index(2) {worksheet.set_active(true);}
+					if let Ok(worksheet) = wb.worksheet_from_index(3) {worksheet.set_active(true);}
 
 					// figure out the output path we want for the xlsx file
 					let mut output_path = input_file.clone();
