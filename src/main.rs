@@ -1,4 +1,5 @@
 use gui::GUI;
+use std::time::SystemTime;
 use rust_excel_helper::{data::{self}, excel};
 
 mod gui;
@@ -12,6 +13,7 @@ fn main() {
 			match msg {
 				gui::InterfaceMessage::CSVInputFile(input_file) => {
 					gui.start_wait();
+					let start: SystemTime = SystemTime::now();
 					
 					// get data from csv file
 					let data = data::read_csv_file(&input_file).unwrap();
@@ -64,6 +66,12 @@ fn main() {
 					println!("Finished writing to the workbook successfully!\n");
 
 					gui.end_wait();
+					let duration_res = start.elapsed();
+					match duration_res {
+						Ok(duration) => println!("Processing completed in {} milliseconds.", duration.as_millis()),
+						Err(err) => println!("Couldn't calculate duration because {}", err),
+					}//end printing duration of processing
+					
 				},
 				gui::InterfaceMessage::AppClosing => GUI::quit(),
 				_ => println!("Message {:?} not recognized or supported.", msg),
