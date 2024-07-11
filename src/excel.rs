@@ -202,6 +202,64 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	return chunks;
 }//end extract_sorted_chunks_2()
 
+pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
+	let mut chunk = DataChunk::new();
+	// add the headers
+	chunk.headers.push(("Sample".to_string(),0));
+	for _ in data.iter()
+	{ chunk.headers.push(("%Area2".to_string(),1)); }
+	chunk.headers.push(("".to_string(),0));
+	chunk.headers.push(("Avg".to_string(),1));
+	chunk.headers.push(("Std".to_string(),2));
+	chunk.headers.push(("CV".to_string(),2));
+	
+	// add sample labels
+	let sample_labels = SampleOrder::AB15.get_labels();
+	sample_labels.iter()
+		.map(|lbl| DataVal::String(lbl.to_string()))
+		.for_each(|lbl| chunk.rows.push(vec![lbl]));
+
+	// add %Area2 for each file
+	for (col_idx, file) in data.iter().enumerate() {
+		for (line_idx, line) in 
+		InputFile::get_ab15_order(
+			file.sample_ordering,
+			&file.input_lines
+		).iter().enumerate() {
+			// gets reference to current row. Error validation in case of unlabelled samples
+			let this_chunk_row_ref = match chunk.rows.get_mut(line_idx) {
+				Some(chunk_row) => chunk_row,
+				None => {
+					while !(line_idx < chunk.rows.len()) {
+						let mut new_placeholder_row = Vec::new();
+						for _ in 0..(col_idx+1)
+						{ new_placeholder_row.push(DataVal::String("??".to_string())); }
+						chunk.rows.push(new_placeholder_row);
+					}//end populating empty space so we're in the right position
+					chunk.rows.last_mut().unwrap()
+				}//end case that we need to create a row to reference
+			};//end getting reference for this row
+			this_chunk_row_ref.push(DataVal::Float(line.perc_area2));
+		}//end looping over lines in the file
+	}//end looping over files to include
+
+	// Add avg, std, cv
+	for row in chunk.rows.iter_mut() {
+		let data_slice: &Vec<f32> = &row[1..].iter()
+			.filter_map(|d| match d {
+				DataVal::Float(f) => Some(f),
+				_ => None,})
+			.map(|f| f.clone())
+			.collect::<Vec<f32>>();
+		row.push(DataVal::String("".to_string()));
+		row.push(DataVal::Float(crate::math::avg(data_slice)));
+		row.push(DataVal::Float(crate::math::std(data_slice)));
+		row.push(DataVal::Float(crate::math::cv(data_slice)));
+	}//end adding avg, std, cv for each row
+
+	return chunk;
+}//end extract_sorted_chunks_3()
+
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
 	workbook: &mut Workbook,
