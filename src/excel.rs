@@ -265,6 +265,86 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 	return chunk;
 }//end extract_sum_chunk()
 
+/// Assuming a set of filenames has the same sample id,
+/// and assuming that that id is separated by dashes,
+/// attempts to find a common sample id from a list of
+/// names.  
+/// If multiple matches are found, will prefer the
+/// match that includes numbers over one without.  
+/// If no matches are found, returns none.
+/// If multiple matches are found, returns all of the matches,
+/// separated by dashes.  
+/// If the given vec is empty, returns none.
+/// 
+/// # Examples
+/// ```
+/// use milo_excel_helper::excel::guess_sample_id;
+/// let filenames = vec!["ns-ag05-ab15.tif","ns-ag05-ba51","ns-ag05-ab15"];
+/// let guessed_id = guess_sample_id(&filenames);
+/// let expected_id = "ag05".to_string();
+/// assert_eq!(guessed_id.unwrap(), expected_id);
+/// ```
+/// ```
+/// use milo_excel_helper::excel::guess_sample_id;
+/// let filenames = vec!["ns-ag05-131-ab15.tif","ns-ag05-132-ab15.tif"];
+/// let guessed_id = guess_sample_id(&filenames);
+/// let expected_id = "ns-ag05-ab15-tif".to_string();
+/// assert_eq!(guessed_id.unwrap(), expected_id);
+/// ```
+/// ```
+/// use milo_excel_helper::excel::guess_sample_id;
+/// let filenames = vec![
+/// 	"ns-ag05-131-ab15.tif",
+/// 	"ns-ag05-132-ba51.tif",
+/// 	"ns-ag05-133-ab15.tif",
+/// 	"ns-ag05-134-ba51.tif",
+/// 	"ns-ag05-135-ab15.tif",
+/// 	"ns-ag05-136-ba51.tif"
+/// ];
+/// let guessed_id = guess_sample_id(&filenames);
+/// let expected_id = "ag05".to_string();
+/// assert_eq!(guessed_id.unwrap(), expected_id);
+/// ```
+/// ```
+/// use milo_excel_helper::excel::guess_sample_id;
+/// let filenames = vec![
+/// 	"ns-ag05-131-ab15.tif",
+/// 	"ns-ag05-132-ba51.tif",
+/// 	"ns-ag05-133-ab15.tif",
+/// 	"ns-ag05-134-ba51.tif",
+/// 	"ns-ag05-135-ab15.tif",
+/// 	"ns-ag05-136-ba51.tif",
+/// 	"ns-ag06-141-ab15.tif"
+/// ];
+/// let guessed_id = guess_sample_id(&filenames);
+/// let expected_id = "ns-tif".to_string();
+/// assert_eq!(guessed_id.unwrap(), expected_id);
+/// ```
+pub fn guess_sample_id(filenames: &Vec<&str>) -> Option<String> {
+	if filenames.len() < 1 {return None;}
+	let first_id = filenames.first().expect("There should be a first filename; We already checked that len() is 1 or more.");
+	let first_components = first_id.split(&['-','.']);
+	// get list of components contained within every filename
+	let full_matches: Vec<&str> = first_components
+		.filter(
+			|id| filenames.iter().find(|name| !name.contains(id)).is_none()
+		)
+		.collect();
+	match full_matches.len() {
+		0 => return None,
+		1 => return Some(full_matches.first().unwrap().to_string()),
+		_ => {
+			let matches_with_nums: Vec<&&str> = full_matches.iter()
+				.filter(|id| id.chars().find(|char| char.is_numeric()).is_some())
+				.collect();
+			match matches_with_nums.len() {
+				1 => return Some(matches_with_nums.first().unwrap().to_string()),
+				_ => return Some(full_matches.join("-"))
+			}
+		}//end case of more than 1 match
+	}//end matching based on number of matches
+}//end guess_sample_id()
+
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
 	workbook: &mut Workbook,
