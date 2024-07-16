@@ -124,6 +124,7 @@ impl GUI {
 		io_btn_get_input.set_down_frame(io_btn_down_frame);
 		io_btn_get_input.set_color(io_btn_color);
 		io_btn_get_input.set_selection_color(io_btn_down_color);
+        io_btn_get_input.clear_visible_focus();
 		main_window.add(&io_btn_get_input);
 
 		io_btn_get_input.set_callback({
