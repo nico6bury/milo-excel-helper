@@ -41,12 +41,13 @@ fn main() {
 
 					// figure out the output path we want for the xlsx file
 					let mut output_path = input_file.clone();
-					output_path.set_file_name(format!("{}-OUT", input_file.file_name().unwrap().to_string_lossy()));
+					output_path.set_file_name(format!("{}-OUT", input_file.file_name().unwrap_or_default().to_string_lossy()));
 					output_path.set_extension("xlsx");
 
 					// actually write the changes to the workbook
 					println!("Closing the workbook, writing to {:?}", output_path);
-					excel::close_workbook(&mut wb, &output_path).unwrap();
+					excel::close_workbook(&mut wb, &output_path)
+						.unwrap_or_else(|_| println!("Failed to write changes to the workbook!?"));
 					println!("Finished writing to the workbook successfully!\n");
 					let workbook_duration = workbook_start.elapsed();
 					
@@ -58,6 +59,59 @@ fn main() {
 					println!("{} milliseconds to process all data.", format_milliseconds(process_duration));
 					println!("{} milliseconds to write all data to the workbook.", format_milliseconds(workbook_duration));
 					println!("All processes completed after {} milliseconds.", format_milliseconds(total_duration));
+				},
+				gui::InterfaceMessage::CSVInputFiles(files) => {
+					let mut stats_chunks = Vec::new();
+					gui.start_wait();
+					let start = Instant::now();
+					let mut csv_duration = Duration::new(0,0);
+					let mut process_duration = Duration::new(0,0);
+					let mut workbook_duration = Duration::new(0,0);
+					
+					for file in files.iter() {
+						// get data from file
+						let csv_instant = Instant::now();
+						let data = data::read_csv_file(&file).expect("Failed to read csv input file!?");
+						csv_duration += csv_instant.elapsed();
+
+						// do processing to get data chunks
+						let process_start = Instant::now();
+						let detail_chunks = get_detail_chunks(&data);
+						let sum_chunks = get_sum_chunks(&data);
+						stats_chunks.push(sum_chunks.1.clone());
+						process_duration += process_start.elapsed();
+
+						// write all the data chunks to various excel sheets
+						let workbook_start = Instant::now();
+						let mut wb = excel::get_workbook();
+
+						write_detail_chunks(&mut wb, detail_chunks)
+							.unwrap_or_else(|_| println!("Failed writing detailed chunks for {}.", file.as_os_str().to_string_lossy()));
+						write_sum_chunks(&mut wb, sum_chunks)
+							.unwrap_or_else(|_| println!("Failed writing sum chunks for {}", file.as_os_str().to_string_lossy()));
+						if let Ok(worksheet) = wb.worksheet_from_index(4) {worksheet.set_active(true);}
+
+						// figure out output path we want for the xlsx file
+						let mut output_path = file.clone();
+						output_path.set_file_name(format!("{}-OUT", file.file_name().unwrap_or_default().to_string_lossy()));
+						output_path.set_extension("xlsx");
+
+						// actually write the changes to the workbook
+						excel::close_workbook(&mut wb, &output_path)
+							.unwrap_or_else(|_| println!("Failed to write changes to workbook!?"));
+						workbook_duration += workbook_start.elapsed();
+
+						println!("Finished all processes for file {}", file.file_name().unwrap_or_default().to_string_lossy());
+					}//end doing all the processing for every file
+
+					let total_duration = start.elapsed();
+					println!("While processing {} files, took:", files.len());
+					println!("- {} milliseconds to read csv files", format_milliseconds(csv_duration));
+					println!("- {} milliseconds to process data", format_milliseconds(process_duration));
+					println!("- {} milliseconds to write data to workbooks", format_milliseconds(workbook_duration));
+					println!("And {} milliseconds for all processes and all files.", format_milliseconds(total_duration));
+
+					gui.end_wait();
 				},
 				gui::InterfaceMessage::AppClosing => GUI::quit(),
 				_ => println!("Message {:?} not recognized or supported.", msg),
