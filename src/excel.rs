@@ -15,6 +15,13 @@ impl DataVal {
 	pub fn str(str: &str) -> DataVal {DataVal::String(str.to_string())}
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum OutputVal {
+	KernelArea,
+	EndospermArea,
+	PercentArea,
+}//end enum OutputVal
+
 /// for each in header:
 /// - name of header
 /// - decimal places to display for header
@@ -207,7 +214,7 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 	return chunks;
 }//end extract_sorted_chunks_2()
 
-pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
+pub fn extract_sum_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> DataChunk {
 	let mut chunk = DataChunk::new();
 	// add the headers
 	chunk.headers.push(("Sample".to_string(),0, false));
@@ -244,7 +251,11 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 					chunk.rows.last_mut().unwrap()
 				}//end case that we need to create a row to reference
 			};//end getting reference for this row
-			this_chunk_row_ref.push(DataVal::Float(line.perc_area2));
+			match output_val {
+				OutputVal::KernelArea => this_chunk_row_ref.push(DataVal::Float(line.area1 as f32)),
+				OutputVal::EndospermArea => this_chunk_row_ref.push(DataVal::Float(line.area2 as f32)),
+				OutputVal::PercentArea => this_chunk_row_ref.push(DataVal::Float(line.perc_area2)),
+			}//end matching the kind of sum to do
 		}//end looping over lines in the file
 	}//end looping over files to include
 
@@ -265,7 +276,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 	return chunk;
 }//end extract_sum_chunk()
 
-pub fn extract_stats_chunk(data: &Vec<InputFile>) -> DataChunk {
+pub fn extract_stats_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> DataChunk {
 	let mut chunk = DataChunk::new();
 	// add the headers
 	chunk.headers.push(("Sample".to_string(),1,false));
@@ -311,7 +322,11 @@ pub fn extract_stats_chunk(data: &Vec<InputFile>) -> DataChunk {
 					rows_per_sample.last_mut().expect("We just added to the vec, it shouldn't be empty!")
 				}//end case that we need to create a row to reference
 			};//end getting reference for this row
-			this_row_ref.push(line.perc_area2);
+			match output_val {
+				OutputVal::KernelArea => this_row_ref.push(line.area1 as f32),
+				OutputVal::EndospermArea => this_row_ref.push(line.area2 as f32),
+				OutputVal::PercentArea => this_row_ref.push(line.perc_area2),
+			}
 		}//end looping over samples in ab15 order
 	}//end looping over files
 
