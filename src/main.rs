@@ -62,6 +62,7 @@ fn main() {
 					println!("All processes completed after {} milliseconds.", format_milliseconds(total_duration));
 				},
 				gui::InterfaceMessage::CSVInputFiles(files) => {
+					if files.len() == 0 {println!("Can't Batch Process 0 Files !!"); continue;}
 					let mut stats_chunks = Vec::new();
 					gui.start_wait();
 					println!("\n\n");
@@ -105,6 +106,20 @@ fn main() {
 
 						println!("Finished all processes for file {}", file.file_name().unwrap_or_default().to_string_lossy());
 					}//end doing all the processing for every file
+
+					let mut wb = excel::get_workbook();
+					let mut sum_book_output = files.first()
+						.expect("We should have files at this point").clone();
+					sum_book_output.set_file_name(format!("{}_file_summary_book", files.len()));
+					sum_book_output.set_extension("xlsx");
+					excel::write_chunks_to_sheet(
+						&mut wb,
+						stats_chunks.iter(),
+						"all-stats"
+					).unwrap_or_else(|_| println!("Failed to write stats to sum book."));
+					excel::close_workbook(&mut wb, &sum_book_output)
+						.unwrap_or_else(|_| println!("Failed to write changes to sum book."));
+					println!("The summary sheet should be found at {}", sum_book_output.as_os_str().to_string_lossy());
 
 					let total_duration = start.elapsed();
 					println!("While processing {} files, took:", files.len());
