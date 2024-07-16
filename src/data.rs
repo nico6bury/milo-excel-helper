@@ -124,7 +124,7 @@ pub fn read_csv_file(file: &PathBuf) -> Option<Vec<InputFile>> {
 	// get the headers and header_idx
 	loop {
 		let line = lines[header_idx];
-		let cols: Vec<&str> = line.split(',').collect();
+		let cols: Vec<&str> = line.split(',').filter(|col| !col.eq(&"")).collect();
 		if cols.len() > 5 {
 			// save headers
 			_headers = cols;
