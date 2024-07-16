@@ -218,8 +218,13 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> DataCh
 	let mut chunk = DataChunk::new();
 	// add the headers
 	chunk.headers.push(("Sample".to_string(),0, false));
-	for _ in data.iter()
-	{ chunk.headers.push(("%Area2".to_string(),1, false)); }
+	for _ in data.iter() {
+		match output_val {
+			OutputVal::KernelArea => chunk.headers.push(("Area1".to_string(),1, false)),
+			OutputVal::EndospermArea => chunk.headers.push(("Area2".to_string(),1, false)),
+			OutputVal::PercentArea => chunk.headers.push(("%Area2".to_string(),1, false)),
+		}//end outputting header based on output_val
+	}//end adding headers based on output_val for each file
 	chunk.headers.push(("".to_string(),0, false));
 	chunk.headers.push(("Avg".to_string(),1, false));
 	chunk.headers.push(("Std".to_string(),2, false));
