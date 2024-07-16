@@ -1,4 +1,4 @@
-use std::{path::PathBuf, slice::Iter};
+use std::{ops::Sub, path::PathBuf, slice::Iter};
 
 use rust_xlsxwriter::{Format, FormatAlign, Workbook, XlsxError};
 
@@ -264,6 +264,110 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 
 	return chunk;
 }//end extract_sum_chunk()
+
+pub fn extract_stats_chunk(data: &Vec<InputFile>) -> DataChunk {
+	let mut chunk = DataChunk::new();
+	// add the headers
+	chunk.headers.push(("Sample".to_string(),1,false));
+	chunk.headers.push(("Avg".to_string(),1,false));
+	chunk.headers.push(("Std".to_string(),1,false));
+	chunk.headers.push(("CV".to_string(),1,true));
+	chunk.headers.push(("".to_string(),1,false));
+	chunk.headers.push(("Split Diff".to_string(),1,false));
+	chunk.headers.push(("Split Std".to_string(),1,false));
+	chunk.headers.push(("Split Avg".to_string(),1,false));
+	chunk.headers.push(("Split CV".to_string(),1,true));
+
+	// add sample labels, also having overall sample, like ag05-1a
+	let sample_labels = SampleOrder::AB15.get_labels();
+	let filenames: Vec<&str> = data.iter()
+		.map(|file| file.file_id.as_str())
+		.collect();
+	let mut common_sample_id = guess_sample_id(&filenames).unwrap_or("".to_string());
+	if !common_sample_id.eq("") {common_sample_id += "-";}
+	sample_labels.iter()
+		.map(|lbl| DataVal::String(common_sample_id.clone() + lbl))
+		.for_each(|lbl| chunk.rows.push(vec![lbl]));
+
+	// collect %Area2 for each file
+	// rows_per_sample has each column from file, each row from sample
+	// each inner vec is one row, iterate through one row for cols
+	let mut rows_per_sample: Vec<Vec<f32>> = Vec::new();
+	for (col_idx, file) in data.iter().enumerate() {
+		for (line_idx, line) in
+		InputFile::get_ab15_order(
+			file.sample_ordering,
+			&file.input_lines
+		).iter().enumerate() {
+			let this_row_ref = match rows_per_sample.get_mut(line_idx) {
+				Some(row_ref) => row_ref,
+				None => {
+					while !(line_idx < rows_per_sample.len()) {
+						let mut new_placeholder_row = Vec::new();
+						for _ in 0..(col_idx)
+						{ new_placeholder_row.push(-1.); }
+						rows_per_sample.push(new_placeholder_row);
+					}//end populating empty space so we're in the right position
+					rows_per_sample.last_mut().expect("We just added to the vec, it shouldn't be empty!")
+				}//end case that we need to create a row to reference
+			};//end getting reference for this row
+			this_row_ref.push(line.perc_area2);
+		}//end looping over samples in ab15 order
+	}//end looping over files
+
+	// Add avg, std, cv per file
+	for i in 0..(rows_per_sample.len()) {
+		// get references for right space in vecs
+		let this_data_row_ref = rows_per_sample.get(i);
+		if this_data_row_ref.is_none() {continue;}
+		let this_data_row_ref = this_data_row_ref.unwrap();
+		let this_chunk_row_ref = match chunk.rows.get_mut(i) {
+			Some(chunk_row) => chunk_row,
+			None => {
+				while !(i < chunk.rows.len()) {
+					let mut new_placeholder_row = Vec::new();
+					for _ in 0..(i+1)
+					{ new_placeholder_row.push(DataVal::str("??")); }
+					chunk.rows.push(new_placeholder_row);
+				}//end populating empty space so we're in the right position
+				chunk.rows.last_mut().expect("We just added to the vec; it shouldn't be empty!")
+			}//end case that we need to create a row to reference
+		};//end getting reference for this row in chunk
+
+		// add per-sample (1a, 1b, 2a, 2b, etc) data
+		let avg = crate::math::avg(this_data_row_ref);
+		let std = crate::math::std(this_data_row_ref);
+		let cv = crate::math::cv(this_data_row_ref);
+		this_chunk_row_ref.push(DataVal::Float(avg));
+		this_chunk_row_ref.push(DataVal::Float(std));
+		this_chunk_row_ref.push(DataVal::Float(cv));
+		this_chunk_row_ref.push(DataVal::str(""));
+
+		// add sample average data (per 1, 2, etc)
+		if i % 2 == 0 {
+			let sa = rows_per_sample.get(i);
+			let sb = rows_per_sample.get(i+1);
+			if sa.is_some() && sb.is_none() {this_chunk_row_ref.append(&mut vec![DataVal::str(""),DataVal::str(""),DataVal::str(""),DataVal::str("")])}
+			else if sa.is_some() && sb.is_some() {
+				let sa = sa.expect("We already checked sa is_some()!?");
+				let sb = sb.expect("We already checked sb is_some()!?");
+				let sa_avg = crate::math::avg(sa);
+				let sb_avg = crate::math::avg(sb);
+				let s_diff = sa_avg.sub(sb_avg).abs();
+				let s_std = crate::math::std(&vec![sa_avg,sb_avg]);
+				let s_avg = (sa_avg + sb_avg) / 2.;
+				let s_cv = s_std / s_avg;
+				// split diff, split std, split avg, split cv
+				this_chunk_row_ref.push(DataVal::Float(s_diff));
+				this_chunk_row_ref.push(DataVal::Float(s_std));
+				this_chunk_row_ref.push(DataVal::Float(s_avg));
+				this_chunk_row_ref.push(DataVal::Float(s_cv));
+			}//end if we found both a and b
+		}//end if we're on an even index
+	}//end looping matching file data to chunk rows for each file
+
+	return chunk;
+}//end extract_stats_chunk()
 
 /// Assuming a set of filenames has the same sample id,
 /// and assuming that that id is separated by dashes,
