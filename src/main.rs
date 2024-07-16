@@ -14,6 +14,7 @@ fn main() {
 			match msg {
 				gui::InterfaceMessage::CSVInputFile(input_file) => {
 					gui.start_wait();
+					println!("\n\n");
 					let start = Instant::now();
 					
 					// get data from csv file
@@ -63,6 +64,7 @@ fn main() {
 				gui::InterfaceMessage::CSVInputFiles(files) => {
 					let mut stats_chunks = Vec::new();
 					gui.start_wait();
+					println!("\n\n");
 					let start = Instant::now();
 					let mut csv_duration = Duration::new(0,0);
 					let mut process_duration = Duration::new(0,0);
