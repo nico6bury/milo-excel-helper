@@ -263,7 +263,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>) -> DataChunk {
 	}//end adding avg, std, cv for each row
 
 	return chunk;
-}//end extract_sorted_chunks_3()
+}//end extract_sum_chunk()
 
 /// Writes a number of chunks of data to a sheet in a workbook
 pub fn write_chunks_to_sheet(
