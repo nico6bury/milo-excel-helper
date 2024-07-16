@@ -39,6 +39,7 @@ fn main() {
 					let sorted_1_chunks = excel::extract_sorted_chunks_1(&data);
 					let sorted_2_chunks = excel::extract_sorted_chunks_2(&data);
 					let sum_chunk = excel::extract_sum_chunk(&data);
+					let stats_chunk = excel::extract_stats_chunk(&data);
 					let process_duration = process_start.elapsed();
 
 					// write all the data chunks to various excel sheets
@@ -70,7 +71,13 @@ fn main() {
 						"sum"
 					).unwrap_or_else(|_| println!("Failed to write sum chunk."));
 
-					if let Ok(worksheet) = wb.worksheet_from_index(3) {worksheet.set_active(true);}
+					excel::write_chunks_to_sheet(
+						&mut wb,
+						vec![stats_chunk].iter(),
+						"stats"
+					).unwrap_or_else(|_| println!("Failed to write stats chunk."));
+
+					if let Ok(worksheet) = wb.worksheet_from_index(4) {worksheet.set_active(true);}
 
 					// figure out the output path we want for the xlsx file
 					let mut output_path = input_file.clone();
