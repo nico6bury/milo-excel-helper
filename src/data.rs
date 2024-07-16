@@ -142,7 +142,7 @@ pub fn read_csv_file(file: &PathBuf) -> Option<Vec<InputFile>> {
 		// just get the actual columns
 		let line = lines[i];
 		let cols: Vec<&str> = line.split(',').collect();
-		if cols.len() < 5 {println!("{:?}",cols); continue;}
+		if cols.len() < 5 {if !cols.eq(&(vec![""])) {println!("{:?}",cols)}; continue;}
 		// get all the actual data
 		let file_id = cols[0];
 		let grid_idx: i32 = cols[1].parse().unwrap_or(-2);
