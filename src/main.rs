@@ -21,18 +21,6 @@ fn main() {
 					let data = data::read_csv_file(&input_file).unwrap();
 					let csv_duration = csv_start.elapsed();
 
-					// print out all data for debugging purposes
-					let debug_start = Instant::now();
-					for dat in data.iter() {
-						println!("\nFileID {}", dat.file_id);
-						println!("Ordering {:?}", dat.sample_ordering);
-						for line in dat.input_lines.iter() {
-							println!("{:?}", line);
-						}//end looping over lines
-					}//end looping over image file groups
-					println!("\n\n\n");
-					let debug_duration = debug_start.elapsed();
-
 					// do a bunch of processing on data to get data chunks
 					println!("Ready to start extracting data chunks from the data we read!");
 					let process_start = Instant::now();
@@ -67,7 +55,6 @@ fn main() {
 					// print information on how long program took to run
 					let total_duration = start.elapsed();
 					println!("{} milliseconds to read csv file.", format_milliseconds(csv_duration));
-					println!("{} milliseconds to print debug information.", format_milliseconds(debug_duration));
 					println!("{} milliseconds to process all data.", format_milliseconds(process_duration));
 					println!("{} milliseconds to write all data to the workbook.", format_milliseconds(workbook_duration));
 					println!("All processes completed after {} milliseconds.", format_milliseconds(total_duration));
