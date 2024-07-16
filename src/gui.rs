@@ -11,6 +11,9 @@ pub enum InterfaceMessage {
     /// Indicates that the user has selected a CSV Input File.
     /// The filepath selected by the user is returned in the message.
     CSVInputFile(PathBuf),
+    /// Indicates that the user has selected multiple CSV Input Files.
+    /// THe filepaths selected by the user are returned in this message.
+    CSVInputFiles(Vec<PathBuf>),
     /// Indicates that the user has clicked the Process Button,
     /// so they wish for the output file to be produced.
     ProcessSum,
@@ -21,23 +24,6 @@ pub enum InterfaceMessage {
     /// on the part of the sender.
     Other(String),
 }//end enum InterfaceMessage
-
-#[allow(dead_code)]
-impl InterfaceMessage {
-    /// Generates a file-based InterfaceMessage from the header and
-    /// content. Specifically, this function returns one of:
-    /// - CSVInputFile
-    /// - XMLInputFile
-    /// - OutputFile
-    /// - Other
-    /// depending on the header.
-    pub fn file_message_from_header(header: &str, content: PathBuf) -> InterfaceMessage {
-        match header {
-            "CSVInputFile" => InterfaceMessage::CSVInputFile(content),
-            _ => InterfaceMessage::Other(content.to_string_lossy().into_owned()),
-        }//end matching header to type.
-    }//end file_message_from_header(header,content)
-}//end InterfaceMessage
 
 #[allow(dead_code)]
 pub struct GUI {
@@ -143,7 +129,13 @@ impl GUI {
 		io_btn_get_input.set_callback({
 			let sender_clone = s.clone();
 			move |_| {
-				if let Err(err_message) = GUI::create_io_dialog(&sender_clone, "CSVInputFile", dialog::NativeFileChooserType::BrowseFile, dialog::NativeFileChooserOptions::UseFilterExt, "*.csv", "Please select a csv input file") {
+				if let Err(err_message) = GUI::create_io_dialog(
+                    &sender_clone,
+                    dialog::NativeFileChooserType::BrowseMultiFile,
+                    dialog::NativeFileChooserOptions::UseFilterExt,
+                    "*.csv",
+                    "Please select a csv input file"
+                ) {
 					println!("Encountered an error when attempting to show file dialog:\n{}", err_message);
 				}//end if we got an error
 			}//end moving for closure
@@ -170,7 +162,7 @@ impl GUI {
 
 	/// Helper method used in initialize to share code between handlers
     /// of io buttons.
-    fn create_io_dialog(sender: &Sender<InterfaceMessage>, msg_header: &str, dialog_type: dialog::NativeFileChooserType, dialog_option: dialog::NativeFileChooserOptions, dialog_filter: &str, dialog_title: &str ) -> Result<(), String> {
+    fn create_io_dialog(sender: &Sender<InterfaceMessage>, dialog_type: dialog::NativeFileChooserType, dialog_option: dialog::NativeFileChooserOptions, dialog_filter: &str, dialog_title: &str ) -> Result<(), String> {
         // set up dialog with all the settings
         let mut dialog = dialog::NativeFileChooser::new(dialog_type);
         dialog.set_option(dialog_option);
@@ -182,11 +174,14 @@ impl GUI {
         if dialog_error != "" {
             return Err(format!("We encountered a dialog error somehow. Details below:\n{}", dialog_error));
         }//end if dialog had an error
-        let dialog_filename = dialog.filename();
+        let dialog_filenames = dialog.filenames();
         drop(dialog);
         // make sure we can get the file from the dialog
-		sender.send(InterfaceMessage::file_message_from_header(msg_header,dialog_filename));
-
+        match dialog_filenames.len() {
+            n if n <= 0 => sender.send(InterfaceMessage::Other("No files selected for input!?".to_string())),
+            1 => sender.send(InterfaceMessage::CSVInputFile(dialog_filenames.first().expect("checked length for .first()").clone())),
+            _ => sender.send(InterfaceMessage::CSVInputFiles(dialog_filenames))
+        }//end matching right message to length
         return Ok(());
     }//end create_io_dialog()
 }//end impl for GUI
