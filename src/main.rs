@@ -64,7 +64,7 @@ fn process_and_time_files(files: &Vec<PathBuf>, output_sum_book: bool) {
 			.unwrap_or_else(|_| println!("Failed writing detailed chunks for {}.", file.as_os_str().to_string_lossy()));
 		write_sum_chunks(&mut wb, sum_chunks)
 			.unwrap_or_else(|_| println!("Failed writing sum chunks for {}", file.as_os_str().to_string_lossy()));
-		if let Ok(worksheet) = wb.worksheet_from_index(4) {worksheet.set_active(true);}
+		if let Ok(worksheet) = wb.worksheet_from_index(5) {worksheet.set_active(true);}
 
 		// figure out output path we want for the xlsx file
 		let mut output_path = file.clone();
@@ -127,14 +127,22 @@ fn get_detail_chunks(
 }//end get_detail_chunks
 
 /// Shorthand for extracting:
-/// - sum_chunk
-/// - stats_chunk
+/// - sum chunk for area1
+/// - sum chunk for area2
+/// - sum_chunk for percent area
+/// - stats chunk for area1
+/// - stats_chunk for area2
+/// - stats_chunk for percent area
 fn get_sum_chunks(
 	data: &Vec<InputFile>
-) -> (DataChunk, DataChunk) {
-	let sum_chunk = excel::extract_sum_chunk(data);
-	let stats_chunk = excel::extract_stats_chunk(data);
-	(sum_chunk, stats_chunk)
+) -> (DataChunk, DataChunk, DataChunk, DataChunk, DataChunk, DataChunk) {
+	let sum_e_chunk = excel::extract_sum_chunk(data, excel::OutputVal::EndospermArea);
+	let sum_k_chunk = excel::extract_sum_chunk(data, excel::OutputVal::KernelArea);
+	let sum_p_chunk = excel::extract_sum_chunk(data, excel::OutputVal::PercentArea);
+	let stats_e_chunk = excel::extract_stats_chunk(data, excel::OutputVal::EndospermArea);
+	let stats_k_chunk = excel::extract_sum_chunk(data, excel::OutputVal::KernelArea);
+	let stats_p_chunk = excel::extract_stats_chunk(data, excel::OutputVal::PercentArea);
+	(sum_e_chunk, sum_k_chunk, sum_p_chunk, stats_k_chunk, stats_e_chunk, stats_p_chunk)
 }//end get_sum_chunks
 
 /// Shorthand for writing
@@ -160,7 +168,7 @@ fn write_detail_chunks(
 		"sorted-1"
 	).unwrap_or_else(|err| {
 		found_err = Err(err);
-		println!("Failed to write labelled chunks.")
+		println!("Failed to write sorted-1 chunks.")
 	});
 	excel::write_chunks_to_sheet(
 		workbook,
@@ -168,7 +176,7 @@ fn write_detail_chunks(
 		"sorted-2"
 	).unwrap_or_else(|err| {
 		found_err = Err(err);
-		println!("Failed to write labelled chunks.")
+		println!("Failed to write sorted-2 chunks.")
 	});
 	return found_err;
 }//end write_detail_chunks()
@@ -178,24 +186,42 @@ fn write_detail_chunks(
 /// - stats chunk
 fn write_sum_chunks(
 	workbook: &mut Workbook,
-	sum_chunks: (DataChunk, DataChunk),
+	sum_chunks: (DataChunk, DataChunk, DataChunk, DataChunk, DataChunk, DataChunk),
 ) -> Result<(),XlsxError> {
 	let mut found_err = Ok(());
+	// write sum chunks
 	excel::write_chunks_to_sheet(
 		workbook,
-		vec![sum_chunks.0].iter(),
+		vec![sum_chunks.0, sum_chunks.1, sum_chunks.2].iter(),
 		"sum"
 	).unwrap_or_else(|err| {
 		found_err = Err(err);
-		println!("Failed to write labelled chunks.")
+		println!("Failed to write sum chunks.")
+	});
+	// write stats chunks
+	excel::write_chunks_to_sheet(
+		workbook,
+		vec![sum_chunks.3].iter(),
+		"kernel-stats"
+	).unwrap_or_else(|err| {
+		found_err = Err(err);
+		println!("Failed to write kernel Area stats chunks.")
 	});
 	excel::write_chunks_to_sheet(
 		workbook,
-		vec![sum_chunks.1].iter(),
-		"stats"
+		vec![sum_chunks.4].iter(),
+		"ndsprm-stats"
 	).unwrap_or_else(|err| {
 		found_err = Err(err);
-		println!("Failed to write labelled chunks.")
+		println!("Failed to write endosperm Area stats chunks.")
+	});
+	excel::write_chunks_to_sheet(
+		workbook,
+		vec![sum_chunks.5].iter(),
+		"%Area2-stats"
+	).unwrap_or_else(|err| {
+		found_err = Err(err);
+		println!("Failed to write %Area2 stats chunks.")
 	});
 	return found_err;
 }
