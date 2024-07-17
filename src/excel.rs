@@ -289,10 +289,10 @@ pub fn extract_stats_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> Data
 	chunk.headers.push(("Std".to_string(),1,false));
 	chunk.headers.push(("CV".to_string(),1,true));
 	chunk.headers.push(("".to_string(),1,false));
-	chunk.headers.push(("Split Diff".to_string(),1,false));
-	chunk.headers.push(("Split Std".to_string(),1,false));
 	chunk.headers.push(("Split Avg".to_string(),1,false));
+	chunk.headers.push(("Split Std".to_string(),1,false));
 	chunk.headers.push(("Split CV".to_string(),1,true));
+	chunk.headers.push(("Split Diff".to_string(),1,false));
 
 	// add sample labels, also having overall sample, like ag05-1a
 	let sample_labels = SampleOrder::AB15.get_labels();
@@ -378,10 +378,10 @@ pub fn extract_stats_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> Data
 				let s_avg = (sa_avg + sb_avg) / 2.;
 				let s_cv = s_std / s_avg;
 				// split diff, split std, split avg, split cv
-				this_chunk_row_ref.push(DataVal::Float(s_diff));
-				this_chunk_row_ref.push(DataVal::Float(s_std));
 				this_chunk_row_ref.push(DataVal::Float(s_avg));
+				this_chunk_row_ref.push(DataVal::Float(s_std));
 				this_chunk_row_ref.push(DataVal::Float(s_cv));
+				this_chunk_row_ref.push(DataVal::Float(s_diff));
 			}//end if we found both a and b
 		}//end if we're on an even index
 	}//end looping matching file data to chunk rows for each file
