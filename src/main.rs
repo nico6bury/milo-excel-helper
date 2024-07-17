@@ -6,9 +6,15 @@ use milo_excel_helper::{data::{self, InputFile}, excel::{self, DataChunk}};
 mod gui;
 
 fn main() {
+	// set up the gui components
 	let mut gui = GUI::initialize();
 	let recv = gui.get_receiver();
-
+	// print version information
+	println!("Milo Excel Helper, v{}.",option_env!("CARGO_PKG_VERSION").unwrap_or("unknown"));
+	println!("Written by Nicholas Sixbury for use at USDA-ARS Manhattan, KS");
+	println!("This program reformats output from the usda-java-milo-scan program.");
+	println!("\n");
+	// conduct the main application loop until we exit.
 	while gui.wait() {
 		if let Some(msg) = recv.recv() {
 			match msg {
