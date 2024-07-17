@@ -42,7 +42,9 @@ fn main() {
 /// with summary information across all files given.
 fn process_and_time_files(files: &Vec<PathBuf>, output_sum_book: bool) {
 	if files.len() == 0 {println!("Can't Batch Process 0 Files !!"); return;}
-	let mut stats_chunks = Vec::new();
+	let mut stats_k_chunks = Vec::new();
+	let mut stats_e_chunks = Vec::new();
+	let mut stats_p_chunks = Vec::new();
 	println!("\n\n");
 	let start = Instant::now();
 	let mut csv_duration = Duration::new(0,0);
@@ -59,7 +61,9 @@ fn process_and_time_files(files: &Vec<PathBuf>, output_sum_book: bool) {
 		let process_start = Instant::now();
 		let detail_chunks = get_detail_chunks(&data);
 		let sum_chunks = get_sum_chunks(&data);
-		stats_chunks.push(sum_chunks.1.clone());
+		stats_k_chunks.push(sum_chunks.3.clone());
+		stats_e_chunks.push(sum_chunks.4.clone());
+		stats_p_chunks.push(sum_chunks.5.clone());
 		process_duration += process_start.elapsed();
 
 		// write all the data chunks to various excel sheets
@@ -93,9 +97,19 @@ fn process_and_time_files(files: &Vec<PathBuf>, output_sum_book: bool) {
 		sum_book_output.set_extension("xlsx");
 		excel::write_chunks_to_sheet(
 			&mut wb,
-			stats_chunks.iter(),
-			"all-stats"
-		).unwrap_or_else(|_| println!("Failed to write stats to sum book."));
+			stats_k_chunks.iter(),
+			"kernel-stats"
+		).unwrap_or_else(|_| println!("Failed to write kernel stats to sum book."));
+		excel::write_chunks_to_sheet(
+			&mut wb,
+			stats_e_chunks.iter(),
+			"ndsprm-stats"
+		).unwrap_or_else(|_| println!("Failed to write endosperm stats to sum book."));
+		excel::write_chunks_to_sheet(
+			&mut wb,
+			stats_p_chunks.iter(),
+			"%Area2-stats"
+		).unwrap_or_else(|_| println!("Failed to write %Area2 stats to sum book."));
 		excel::close_workbook(&mut wb, &sum_book_output)
 			.unwrap_or_else(|_| println!("Failed to write changes to sum book."));
 		println!("The summary sheet should be found at {}", sum_book_output.as_os_str().to_string_lossy());
