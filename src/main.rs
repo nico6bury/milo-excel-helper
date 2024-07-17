@@ -136,13 +136,13 @@ fn get_detail_chunks(
 fn get_sum_chunks(
 	data: &Vec<InputFile>
 ) -> (DataChunk, DataChunk, DataChunk, DataChunk, DataChunk, DataChunk) {
-	let sum_e_chunk = excel::extract_sum_chunk(data, excel::OutputVal::EndospermArea);
 	let sum_k_chunk = excel::extract_sum_chunk(data, excel::OutputVal::KernelArea);
+	let sum_e_chunk = excel::extract_sum_chunk(data, excel::OutputVal::EndospermArea);
 	let sum_p_chunk = excel::extract_sum_chunk(data, excel::OutputVal::PercentArea);
+	let stats_k_chunk = excel::extract_stats_chunk(data, excel::OutputVal::KernelArea);
 	let stats_e_chunk = excel::extract_stats_chunk(data, excel::OutputVal::EndospermArea);
-	let stats_k_chunk = excel::extract_sum_chunk(data, excel::OutputVal::KernelArea);
 	let stats_p_chunk = excel::extract_stats_chunk(data, excel::OutputVal::PercentArea);
-	(sum_e_chunk, sum_k_chunk, sum_p_chunk, stats_k_chunk, stats_e_chunk, stats_p_chunk)
+	(sum_k_chunk, sum_e_chunk, sum_p_chunk, stats_k_chunk, stats_e_chunk, stats_p_chunk)
 }//end get_sum_chunks
 
 /// Shorthand for writing
