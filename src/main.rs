@@ -64,7 +64,7 @@ fn process_and_time_files(files: &Vec<PathBuf>, output_sum_book: bool) {
 			.unwrap_or_else(|_| println!("Failed writing detailed chunks for {}.", file.as_os_str().to_string_lossy()));
 		write_sum_chunks(&mut wb, sum_chunks)
 			.unwrap_or_else(|_| println!("Failed writing sum chunks for {}", file.as_os_str().to_string_lossy()));
-		if let Ok(worksheet) = wb.worksheet_from_index(5) {worksheet.set_active(true);}
+		if let Ok(worksheet) = wb.worksheet_from_index(6) {worksheet.set_active(true);}
 
 		// figure out output path we want for the xlsx file
 		let mut output_path = file.clone();
