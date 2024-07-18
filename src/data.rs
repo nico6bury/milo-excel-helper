@@ -23,8 +23,8 @@ impl SampleOrder {
 
 		let ab51_indic = vec!["up","uc","51ab","ab51","51AB","AB51"];
 		let ba15_indic = vec!["dn","dc","15ba","ba15","15BA","BA15"];
-		let ab15_indic = vec!["UP","ab15","15ab","AB15","15AB"];
-		let ba51_indic = vec!["DN","ba51","51ba","BA51","51BA"];
+		let ab15_indic = vec!["UP","ab15","15ab","AB15","15AB","top"];
+		let ba51_indic = vec!["DN","ba51","51ba","BA51","51BA","btm"];
 
 		let found_ab51 = file_components.iter().find(|c| ab51_indic.contains(c)).is_some();
 		let found_ba15 = file_components.iter().find(|c| ba15_indic.contains(c)).is_some();
