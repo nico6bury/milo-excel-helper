@@ -24,7 +24,7 @@ pub enum SampleOrder {
 
 impl SampleOrder {
 	pub fn from_file_id(file_id: &str) -> SampleOrder {
-		let file_components: Vec<&str> = file_id.split(&['-','.','_']).collect();
+		let file_components: Vec<&str> = file_id.split(&['-','.']).collect();
 
 		let ab51_indic = vec!["up","uc","51ab","ab51","51AB","AB51"];
 		let ba15_indic = vec!["dn","dc","15ba","ba15","15BA","BA15"];
