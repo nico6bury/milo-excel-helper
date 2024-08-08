@@ -9,11 +9,16 @@ pub struct InputLine {
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Eq, Ord)]
+#[non_exhaustive]
 pub enum SampleOrder {
 	AB51,
 	BA15,
 	AB15,
 	BA51,
+	/// AB 1-10
+	AB110,
+	/// BA 10-1
+	BA101,
 	Unknown,
 }//end enum SampleOrder
 
@@ -25,14 +30,20 @@ impl SampleOrder {
 		let ba15_indic = vec!["dn","dc","15ba","ba15","15BA","BA15"];
 		let ab15_indic = vec!["UP","ab15","15ab","AB15","15AB","top"];
 		let ba51_indic = vec!["DN","ba51","51ba","BA51","51BA","btm"];
+		let ab110_indic = vec!["ab110","AB110","ab1_10","AB1_10"];
+		let ba101_indic = vec!["ba101","BA101","ba10_1","BA10_1"];
 
 		let found_ab51 = file_components.iter().find(|c| ab51_indic.contains(c)).is_some();
 		let found_ba15 = file_components.iter().find(|c| ba15_indic.contains(c)).is_some();
 		let found_ab15 = file_components.iter().find(|c| ab15_indic.contains(c)).is_some();
 		let found_ba51 = file_components.iter().find(|c| ba51_indic.contains(c)).is_some();
+		let found_ab110 = file_components.iter().find(|c| ab110_indic.contains(c)).is_some();
+		let found_ba101 = file_components.iter().find(|c| ba101_indic.contains(c)).is_some();
 
 		if found_ab15 {SampleOrder::AB15}
 		else if found_ba51 {SampleOrder::BA51}
+		else if found_ab110 {SampleOrder::AB110}
+		else if found_ba101 {SampleOrder::BA101}
 		else if found_ab51 {SampleOrder::AB51}
 		else if found_ba15 {SampleOrder::BA15}
 		else {SampleOrder::Unknown}
@@ -44,6 +55,8 @@ impl SampleOrder {
 			SampleOrder::BA15 => vec!["1b","1a","2b","2a","3b","3a","4b","4a","5b","5a"],
 			SampleOrder::AB15 => vec!["1a","1b","2a","2b","3a","3b","4a","4b","5a","5b"],
 			SampleOrder::BA51 => vec!["5b","5a","4b","4a","3b","3a","2b","2a","1b","1a"],
+			SampleOrder::AB110 => vec!["1a","1b","2a","2b","3a","3b","4a","4b","5a","5b","6a","6b","7a","7b","8a","8b","9a","9b","10a","10b"],
+			SampleOrder::BA101 => vec!["10b","10a","9b","9a","8b","8a","7b","7a","6b","6a","5b","5a","4b","4a","3b","3a","2b","2a","1b","1a"],
 			SampleOrder::Unknown => vec!["??","??","??","??","??","??","??","??","??","??"],
 		}//end matching self
 	}//end get_labels
@@ -61,34 +74,6 @@ impl InputFile {
 		InputFile {file_id: file_id.to_string(), input_lines, sample_ordering: SampleOrder::from_file_id(file_id)}
 	}//end new()
 
-	pub fn get_ab51_ordered_lines(input_file: &InputFile) -> Vec<&InputLine> {
-		match input_file.sample_ordering {
-			SampleOrder::AB51 => input_file.input_lines.iter().collect(),
-			SampleOrder::BA15 => input_file.input_lines.iter().rev().collect(),
-			SampleOrder::AB15 => {
-				let mut ab51_order = Vec::new();
-				let ba51_order: Vec<&InputLine> = input_file.input_lines.iter().rev().collect();
-				let mut i = 0; let mut j = 1;
-				while i < input_file.input_lines.len() && j < input_file.input_lines.len() {
-					ab51_order.push(ba51_order[j]);
-					ab51_order.push(ba51_order[i]);
-					i += 2; j += 2;}
-				ab51_order
-			},
-			SampleOrder::BA51 => {
-				let mut ab51_order: Vec<&InputLine> = Vec::new();
-				let ba51_order: Vec<&InputLine> = input_file.input_lines.iter().collect();
-				let mut i = 0; let mut j = 1;
-				while i < input_file.input_lines.len() && j < input_file.input_lines.len() {
-					ab51_order.push(ba51_order[j]);
-					ab51_order.push(ba51_order[i]);
-					i += 2; j += 2;}
-				ab51_order
-			}
-			SampleOrder::Unknown => Vec::new(),
-		}//end matching current ordering of input lines
-	}//end get_ab51_order()
-
 	pub fn get_ab15_order(cur_order: SampleOrder, lines: &Vec<InputLine>) -> Vec<&InputLine> {
 		match cur_order {
 			SampleOrder::AB15 => return lines.iter().collect(),
@@ -105,6 +90,8 @@ impl InputFile {
 				if cur_order == SampleOrder::BA15 {return ab_swp_iter.rev().collect();}
 				else {return ab_swp_iter.collect()}
 			},
+			SampleOrder::AB110 => return lines.iter().collect(),
+			SampleOrder::BA101 => return lines.iter().rev().collect(),
 			SampleOrder::Unknown => return lines.iter().collect(),
 		}
 	}
