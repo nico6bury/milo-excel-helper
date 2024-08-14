@@ -103,7 +103,7 @@ pub fn extract_sorted_chunks_1(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		}//end adding Area headers
 
 		// print out data in columns instead of rows
-		let sample_labels = SampleOrder::AB15.get_labels();
+		let sample_labels = SampleOrder::AB110.get_labels();
 		for sample in sample_labels 
 		{ chunk.rows.push(vec![DataVal::str(sample)]); }
 		
@@ -182,7 +182,7 @@ pub fn extract_sorted_chunks_2(data: &Vec<InputFile>) -> Vec<DataChunk> {
 		{ chunk.headers.push((i_to_label(i),1, false)); }
 
 		// add the data
-		let sample_labels = SampleOrder::AB15.get_labels();
+		let sample_labels = SampleOrder::AB110.get_labels();
 		sample_labels
 			.iter()
 			.map(|elem| DataVal::str(elem))
@@ -231,7 +231,7 @@ pub fn extract_sum_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> DataCh
 	chunk.headers.push(("CV".to_string(),2, true));
 	
 	// add sample labels
-	let sample_labels = SampleOrder::AB15.get_labels();
+	let sample_labels = SampleOrder::AB110.get_labels();
 	sample_labels.iter()
 		.map(|lbl| DataVal::str(lbl))
 		.for_each(|lbl| chunk.rows.push(vec![lbl]));
@@ -295,7 +295,7 @@ pub fn extract_stats_chunk(data: &Vec<InputFile>, output_val: OutputVal) -> Data
 	chunk.headers.push(("Split Diff".to_string(),1,false));
 
 	// add sample labels, also having overall sample, like ag05-1a
-	let sample_labels = SampleOrder::AB15.get_labels();
+	let sample_labels = SampleOrder::AB110.get_labels();
 	let filenames: Vec<&str> = data.iter()
 		.map(|file| file.file_id.as_str())
 		.collect();
