@@ -1,39 +1,80 @@
-use gui::GUI;
+use eframe::{egui, Error};
+// use gui::GUI;
 use rust_xlsxwriter::{Workbook, XlsxError};
 use std::{path::PathBuf, time::{Duration, Instant}};
 use milo_excel_helper::{data::{self, InputFile}, excel::{self, DataChunk}};
 
-mod gui;
+// mod gui;
 
 fn main() {
-	// set up the gui components
-	let mut gui = GUI::initialize();
-	let recv = gui.get_receiver();
 	// print version information
 	println!("Milo Excel Helper, v{}.",option_env!("CARGO_PKG_VERSION").unwrap_or("unknown"));
 	println!("Written by Nicholas Sixbury for use at USDA-ARS Manhattan, KS");
 	println!("This program reformats output from the usda-java-milo-scan program.");
 	println!("\n");
-	// conduct the main application loop until we exit.
-	while gui.wait() {
-		if let Some(msg) = recv.recv() {
-			match msg {
-				gui::InterfaceMessage::CSVInputFile(input_file) => {
-					gui.start_wait();
-					process_and_time_files(&vec![input_file], false);
-					gui.end_wait();
-				},
-				gui::InterfaceMessage::CSVInputFiles(files) => {
-					gui.start_wait();
-					process_and_time_files(&files, true);
-					gui.end_wait();
-				},
-				gui::InterfaceMessage::AppClosing => GUI::quit(),
-				_ => println!("Message {:?} not recognized or supported.", msg),
-			}//end matching based on the message
-		}//end if we have an Interface Message
-	}//end main app loop
+	
+	// set up the gui components
+	let gui = GUI::default();
+	let _gui_res = gui.run();
+
 }//end main method
+
+#[derive(Default)]
+pub struct GUI {
+	picked_paths: Vec<PathBuf>,
+}//end struct GUI
+
+impl GUI {
+	fn run(&self) -> Result<(), Error> {
+		let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default().with_inner_size([275.,50.]),
+            ..Default::default()
+        };
+        let res = eframe::run_native("milo excel helper", options, Box::new(|_cc| {Ok(Box::<GUI>::default())}));
+        res
+	}
+}
+
+impl eframe::App for GUI {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui|{
+            // ui.label("Please click the button below to select or file or drag and drop the file onto this window.");
+            if ui.button("Select Or Drop Input CSV(s)").clicked() {
+                if let Some(paths) = rfd::FileDialog::new().add_filter("CSV Files", &["csv"]).pick_files() {
+					self.picked_paths = paths;
+				}
+            }
+
+			if self.picked_paths.len() > 0 {
+				process_and_time_files(&self.picked_paths, true);
+
+				egui::ScrollArea::vertical().show(ui, |ui| {
+					for path in &self.picked_paths {
+						ui.horizontal(|ui| {
+							// ui.label("Picked file: ");
+							ui.monospace(path.file_name().unwrap_or_default().to_string_lossy());
+							ui.label(" has been processed.");
+						});
+					}
+				});
+
+				self.picked_paths.clear();
+			}
+
+			// collect dropped files:
+			ctx.input(|i| {
+				if !i.raw.dropped_files.is_empty() {
+					let dropped_files = i.raw.dropped_files.clone();
+					self.picked_paths = dropped_files.into_iter()
+						// .map(|dp| dp.path)
+						.filter_map(|dp| dp.path)
+						.collect();
+				}
+			});
+
+        });
+    }//end update
+}//end impl eframe::App for GUI
 
 /// Does all the processing for a number of input files.  
 /// Doesn't touch the gui, so you might want to do gui.start_wait()
